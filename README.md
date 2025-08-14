@@ -54,9 +54,3 @@ Add the following to your settings.json
 ```
 
 The Reason for this behaviour is the automatic cleanup of unused imports of the go extension.
-
-## Release Notes
-
-### 1.0.0
-
-Initial release
