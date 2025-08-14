@@ -39,7 +39,21 @@ None
 
 ## Known Issues
 
-None
+### Automatic deletion of unused imports
+
+When VSCode is automaticly deleting your imports you can do the following:
+Add the following to your settings.json
+
+```json
+"[go]": {
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "never"
+  },
+  "editor.formatOnSave": false
+}
+```
+
+The Reason for this behaviour is the automatic cleanup of unused imports of the go extension.
 
 ## Release Notes
 

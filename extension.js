@@ -35,22 +35,59 @@ function activate(context) {
 
 }
 
-async function create_module(module_name) {
 
+async function isExactlyWorkspaceRoot(testPath) {
+  const uri = vscode.Uri.file(testPath);
+  const wsFolder = vscode.workspace.getWorkspaceFolder(uri);
+  if (!wsFolder) return false;
+  // Check exact match with that folder’s root
+  const a = wsFolder.uri.fsPath;
+  const b = uri.fsPath;
+  return process.platform === 'win32'
+    ? a.toLowerCase() === b.toLowerCase()
+    : a === b;
+}
+
+async function create_module(module_name) {
 	try {
 		const current_path = path.dirname(vscode.window.activeTextEditor.document.uri.fsPath);
-		const parent_path = path.dirname(current_path);
+		let target_path = current_path
+		if((await get_config()).add_mode==2){
+			if(await isExactlyWorkspaceRoot(current_path)){
+				target_path = path.dirname(current_path);
+			}
+		}
+		
+		//Creates new Module Directory
+		vscode.workspace.fs.createDirectory(vscode.Uri.file(target_path + '/' + module_name));
 
-		vscode.workspace.fs.createDirectory(vscode.Uri.file(parent_path + '/' + module_name));
-		const go_file_path = vscode.Uri.file(parent_path + '/' + module_name + '/' + module_name + '.go');
+		//Creates new Module File
+		const go_file_path = vscode.Uri.file(target_path + '/' + module_name + '/' + module_name + '.go');
+		console.log(go_file_path);
 		const content = `package ${module_name}`;
 		vscode.workspace.fs.writeFile(go_file_path, Buffer.from(content));
 
-		var term = vscode.window.createTerminal('Go Module')
-		term.sendText(`cd ${parent_path}/${module_name}`);
-		term.sendText(`go mod init module.localhost/${module_name}`);
-		term.sendText(`cd ${current_path}`);
-		term.sendText(`go mod edit -replace module.localhost/${module_name}=..\\${module_name}`);
+		// Get Terminal
+		const go_module_terminal = vscode.window.terminals.find(terminal_name => terminal_name.name == 'Go Module')
+		let terminal
+		if(!go_module_terminal){
+			terminal = vscode.window.createTerminal('Go Module')
+		} else {
+			terminal = go_module_terminal
+		}
+		
+		// Init module and add replace in parent folder
+		terminal.sendText(`cd "${target_path}/${module_name}"`);
+		terminal.sendText(`go mod init module.localhost/${module_name}`);
+		terminal.sendText(`cd "${target_path}"`);
+		if((await get_config()).add_mode==1){
+		terminal.sendText(`go mod edit -replace module.localhost/${module_name}=.\\${module_name}`);
+		}
+		if((await get_config()).add_mode==2){
+		terminal.sendText(`cd "${current_path}"`);
+		terminal.sendText(`go mod edit -replace module.localhost/${module_name}=..\\${module_name}`);
+		}
+		terminal.sendText(`go mod edit -require="module.localhost/${module_name}@v0.0.0-00010101000000-000000000000"`);
 
 		let editor = vscode.window.activeTextEditor;
 		if (editor) {
@@ -66,11 +103,17 @@ async function create_module(module_name) {
 				await document.save();
 			}
 		}
-		term.sendText(`go mod tidy`);
+		terminal.sendText(`go mod tidy`);
 		return true;
 	} catch {
 		return false;
 	}
+}
+
+async function get_config(){
+	const cfg = vscode.workspace.getConfiguration('go_auto_module');
+	const add_mode = cfg.get('add_mode');
+	return { add_mode };
 }
 
 

@@ -2,7 +2,7 @@
   "name": "go-auto-module",
   "displayName": "go_auto_module",
   "description": "A Extension to automaticly create local go modules quick.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -15,7 +15,23 @@
     "commands": [{
       "command": "go-auto-module.createLocalGoModule",
       "title": "Create Local Go Module"
-    }]
+    }],
+    "configuration": {
+        "title": "go_auto_module",
+        "properties": {
+          "go_auto_module.add_mode": {
+            "type": "integer",
+            "enum": [1, 2],
+            "markdownEnumDescriptions": [
+              "Enables child mode. New Modules are placed in a subfolder of the current gofile.",
+              "Enables sibling mode. New Modules are placed next to the current gofiles parent folder."
+            ],
+            "enumItemLabels": ["Child", "Sibling"],
+            "default": 1,
+            "description": "Sets the mode where folders and files of the new local module are created."
+          }
+        }
+      }
   },
   "scripts": {
     "lint": "eslint .",
